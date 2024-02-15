@@ -1,0 +1,36 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "YnnkWhisperRecognizer",
+	"Description": "Add-on to YnnkVoiceLipsync plugin to process voice recognition on Android devices",
+	"Category": "Other",
+	"CreatedBy": "YuriNK",
+	"CreatedByURL": "https://vrmocapstudio.com",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "YnnkWhisperRecognizer",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "YnnkWhisperRecognizerEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "YnnkVoiceLipsync",
+			"Enabled": true
+		}
+	]
+}
