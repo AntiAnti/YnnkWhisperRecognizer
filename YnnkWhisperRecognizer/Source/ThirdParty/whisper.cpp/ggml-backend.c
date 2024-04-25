@@ -53,7 +53,7 @@ ggml_backend_buffer_t ggml_backend_buffer_init(
         struct ggml_backend_buffer_i           iface,
                ggml_backend_buffer_context_t   context,
                size_t                          size) {
-    ggml_backend_buffer_t buffer = (ggml_backend_buffer_t)malloc(sizeof(struct ggml_backend_buffer));
+    ggml_backend_buffer_t buffer = (ggml_backend_buffer_t)FMemory::Malloc(sizeof(struct ggml_backend_buffer));
 
     GGML_ASSERT(iface.get_base != NULL);
 
@@ -80,7 +80,7 @@ void ggml_backend_buffer_free(ggml_backend_buffer_t buffer) {
     if (buffer->iface.free_buffer != NULL) {
         buffer->iface.free_buffer(buffer);
     }
-    free(buffer);
+    FMemory::Free(buffer);
 }
 
 size_t ggml_backend_buffer_get_size(ggml_backend_buffer_t buffer) {
@@ -272,10 +272,10 @@ void ggml_backend_tensor_copy(struct ggml_tensor * src, struct ggml_tensor * dst
         fprintf(stderr, "%s: warning: slow copy from %s to %s\n", __func__, ggml_backend_buffer_name(src->buffer), ggml_backend_buffer_name(dst->buffer));
 #endif
         size_t nbytes = ggml_nbytes(src);
-        void * data = malloc(nbytes);
+        void * data = FMemory::Malloc(nbytes);
         ggml_backend_tensor_get(src, data, 0, nbytes);
         ggml_backend_tensor_set(dst, data, 0, nbytes);
-        free(data);
+        FMemory::Free(data);
     }
 }
 
@@ -450,24 +450,24 @@ static void * ggml_backend_cpu_buffer_get_base(ggml_backend_buffer_t buffer) {
 }
 
 static void ggml_backend_cpu_buffer_free_buffer(ggml_backend_buffer_t buffer) {
-    free(buffer->context);
+    FMemory::Free(buffer->context);
 }
 
 static void ggml_backend_cpu_buffer_set_tensor(ggml_backend_buffer_t buffer, struct ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
-    memcpy((char *)tensor->data + offset, data, size);
+    FMemory::Memcpy((char *)tensor->data + offset, data, size);
 
     GGML_UNUSED(buffer);
 }
 
 static void ggml_backend_cpu_buffer_get_tensor(ggml_backend_buffer_t buffer, const struct ggml_tensor * tensor, void * data, size_t offset, size_t size) {
-    memcpy(data, (const char *)tensor->data + offset, size);
+    FMemory::Memcpy(data, (const char *)tensor->data + offset, size);
 
     GGML_UNUSED(buffer);
 }
 
 static bool ggml_backend_cpu_buffer_cpy_tensor(ggml_backend_buffer_t buffer, const struct ggml_tensor * src, struct ggml_tensor * dst) {
     if (ggml_backend_buffer_is_host(src->buffer)) {
-        memcpy(dst->data, src->data, ggml_nbytes(src));
+        FMemory::Memcpy(dst->data, src->data, ggml_nbytes(src));
         return true;
     }
     return false;
@@ -476,7 +476,7 @@ static bool ggml_backend_cpu_buffer_cpy_tensor(ggml_backend_buffer_t buffer, con
 }
 
 static void ggml_backend_cpu_buffer_clear(ggml_backend_buffer_t buffer, uint8_t value) {
-    memset(buffer->context, value, buffer->size);
+    FMemory::Memset(buffer->context, value, buffer->size);
 }
 
 static struct ggml_backend_buffer_i cpu_backend_buffer_i = {
@@ -514,7 +514,7 @@ static const char * ggml_backend_cpu_buffer_type_get_name(ggml_backend_buffer_ty
 
 static ggml_backend_buffer_t ggml_backend_cpu_buffer_type_alloc_buffer(ggml_backend_buffer_type_t buft, size_t size) {
     size += TENSOR_ALIGNMENT;   // malloc may return an address that is not aligned
-    void * data = malloc(size); // TODO: maybe use GGML_ALIGNED_MALLOC?
+    void * data = FMemory::Malloc(size); // TODO: maybe use GGML_ALIGNED_MALLOC?
 
     GGML_ASSERT(data != NULL && "failed to allocate buffer");
 
@@ -625,9 +625,9 @@ static const char * ggml_backend_cpu_name(ggml_backend_t backend) {
 
 static void ggml_backend_cpu_free(ggml_backend_t backend) {
     struct ggml_backend_cpu_context * cpu_ctx = (struct ggml_backend_cpu_context *)backend->context;
-    free(cpu_ctx->work_data);
-    free(cpu_ctx);
-    free(backend);
+    FMemory::Free(cpu_ctx->work_data);
+    FMemory::Free(cpu_ctx);
+    FMemory::Free(backend);
 }
 
 static ggml_backend_buffer_type_t ggml_backend_cpu_get_default_buffer_type(ggml_backend_t backend) {
@@ -644,13 +644,13 @@ struct ggml_backend_plan_cpu {
 static ggml_backend_graph_plan_t ggml_backend_cpu_graph_plan_create(ggml_backend_t backend, const struct ggml_cgraph * cgraph) {
     struct ggml_backend_cpu_context * cpu_ctx = (struct ggml_backend_cpu_context *)backend->context;
 
-    struct ggml_backend_plan_cpu * cpu_plan = (ggml_backend_plan_cpu*)malloc(sizeof(struct ggml_backend_plan_cpu));
+    struct ggml_backend_plan_cpu * cpu_plan = (ggml_backend_plan_cpu*)FMemory::Malloc(sizeof(struct ggml_backend_plan_cpu));
 
     cpu_plan->cplan = ggml_graph_plan(cgraph, cpu_ctx->n_threads);
     cpu_plan->cgraph = *cgraph; // FIXME: deep copy
 
     if (cpu_plan->cplan.work_size > 0) {
-        cpu_plan->cplan.work_data = (uint8_t*)malloc(cpu_plan->cplan.work_size);
+        cpu_plan->cplan.work_data = (uint8_t*)FMemory::Malloc(cpu_plan->cplan.work_size);
     }
 
     return cpu_plan;
@@ -659,8 +659,8 @@ static ggml_backend_graph_plan_t ggml_backend_cpu_graph_plan_create(ggml_backend
 static void ggml_backend_cpu_graph_plan_free(ggml_backend_t backend, ggml_backend_graph_plan_t plan) {
     struct ggml_backend_plan_cpu * cpu_plan = (struct ggml_backend_plan_cpu *)plan;
 
-    free(cpu_plan->cplan.work_data);
-    free(cpu_plan);
+    FMemory::Free(cpu_plan->cplan.work_data);
+    FMemory::Free(cpu_plan);
 
     GGML_UNUSED(backend);
 }
@@ -680,7 +680,7 @@ static bool ggml_backend_cpu_graph_compute(ggml_backend_t backend, struct ggml_c
 
     if (cpu_ctx->work_size < cplan.work_size) {
         // TODO: may be faster to free and use malloc to avoid the copy
-        cpu_ctx->work_data = realloc(cpu_ctx->work_data, cplan.work_size);
+        cpu_ctx->work_data = FMemory::Realloc(cpu_ctx->work_data, cplan.work_size);
         cpu_ctx->work_size = cplan.work_size;
     }
 
@@ -717,13 +717,13 @@ static struct ggml_backend_i cpu_backend_i = {
 };
 
 ggml_backend_t ggml_backend_cpu_init(void) {
-    struct ggml_backend_cpu_context * ctx = (ggml_backend_cpu_context*)malloc(sizeof(struct ggml_backend_cpu_context));
+    struct ggml_backend_cpu_context * ctx = (ggml_backend_cpu_context*)FMemory::Malloc(sizeof(struct ggml_backend_cpu_context));
 
     ctx->n_threads = GGML_DEFAULT_N_THREADS;
     ctx->work_data = NULL;
     ctx->work_size = 0;
 
-    ggml_backend_t cpu_backend = (ggml_backend_t)malloc(sizeof(struct ggml_backend));
+    ggml_backend_t cpu_backend = (ggml_backend_t)FMemory::Malloc(sizeof(struct ggml_backend));
 
     *cpu_backend = ggml_backend {
         /* .interface = */ cpu_backend_i,
@@ -1152,7 +1152,7 @@ static void sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgraph * g
         }
         sched->splits[0].i_start = 0;
         sched->splits[0].n_inputs = 0;
-        memset(sched->splits[0].inputs, 0, sizeof(sched->splits[0].inputs)); //HACK
+        FMemory::Memset(sched->splits[0].inputs, 0, sizeof(sched->splits[0].inputs)); //HACK
         ggml_tallocr_t cur_allocr = sched->splits[0].tallocr;
         size_t cur_backend_id = sched_allocr_prio(sched, cur_allocr);
         for (int i = 0; i < graph->n_nodes; i++) {
@@ -1348,9 +1348,9 @@ static void sched_reset(ggml_backend_sched_t sched) {
     }
     // reset state for the next run
     size_t hash_size = sched->hash_set.size;
-    memset(sched->hash_set.keys, 0, sizeof(sched->hash_set.keys[0]) * hash_size);
-    memset(sched->node_talloc,   0, sizeof(sched->node_talloc[0])   * hash_size);
-    memset(sched->node_copies,   0, sizeof(sched->node_copies[0])   * hash_size);
+    FMemory::Memset(sched->hash_set.keys, 0, sizeof(sched->hash_set.keys[0]) * hash_size);
+    FMemory::Memset(sched->node_talloc,   0, sizeof(sched->node_talloc[0])   * hash_size);
+    FMemory::Memset(sched->node_copies,   0, sizeof(sched->node_copies[0])   * hash_size);
 
     sched->is_reset = true;
 }
@@ -1393,10 +1393,10 @@ void ggml_backend_sched_free(ggml_backend_sched_t sched) {
     }
     ggml_gallocr_free(sched->galloc);
     ggml_free(sched->ctx);
-    free(sched->hash_set.keys);
-    free(sched->node_talloc);
-    free(sched->node_copies);
-    free(sched);
+    FMemory::Free(sched->hash_set.keys);
+    FMemory::Free(sched->node_talloc);
+    FMemory::Free(sched->node_copies);
+    FMemory::Free(sched);
 }
 
 void ggml_backend_sched_init_measure(ggml_backend_sched_t sched, struct ggml_cgraph * measure_graph) {
@@ -1506,7 +1506,7 @@ static struct ggml_tensor * graph_dup_tensor(struct ggml_hash_set hash_set, stru
         dst->view_offs = src->view_offs;
     }
     dst->op = src->op;
-    memcpy(dst->op_params, src->op_params, sizeof(dst->op_params));
+    FMemory::Memcpy(dst->op_params, src->op_params, sizeof(dst->op_params));
     ggml_set_name(dst, src->name);
 
     // copy src
@@ -1567,9 +1567,9 @@ struct ggml_backend_graph_copy ggml_backend_graph_copy(ggml_backend_t backend, s
 
     if (ctx_allocated == NULL || ctx_unallocated == NULL) {
         fprintf(stderr, "failed to allocate context for graph copy\n");
-        free(hash_set.keys);
-        free(node_copies);
-        free(node_init);
+        FMemory::Free(hash_set.keys);
+        FMemory::Free(node_copies);
+        FMemory::Free(node_init);
         ggml_free(ctx_allocated);
         ggml_free(ctx_unallocated);
         return ggml_backend_graph_copy_structure {
@@ -1590,9 +1590,9 @@ struct ggml_backend_graph_copy ggml_backend_graph_copy(ggml_backend_t backend, s
     ggml_backend_buffer_t buffer = ggml_backend_alloc_ctx_tensors(ctx_allocated, backend);
     if (buffer == NULL) {
         fprintf(stderr, "failed to allocate buffer for graph copy\n");
-        free(hash_set.keys);
-        free(node_copies);
-        free(node_init);
+        FMemory::Free(hash_set.keys);
+        FMemory::Free(node_copies);
+        FMemory::Free(node_init);
         ggml_free(ctx_allocated);
         ggml_free(ctx_unallocated);
         return ggml_backend_graph_copy_structure {
@@ -1620,9 +1620,9 @@ struct ggml_backend_graph_copy ggml_backend_graph_copy(ggml_backend_t backend, s
     }
     graph_copy->n_nodes = graph->n_nodes;
 
-    free(hash_set.keys);
-    free(node_copies);
-    free(node_init);
+    FMemory::Free(hash_set.keys);
+    FMemory::Free(node_copies);
+    FMemory::Free(node_init);
 
     return ggml_backend_graph_copy_structure {
         /* .buffer           = */ buffer,

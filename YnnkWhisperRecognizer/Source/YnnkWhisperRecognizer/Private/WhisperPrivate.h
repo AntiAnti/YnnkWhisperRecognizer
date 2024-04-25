@@ -105,6 +105,19 @@ SOFTWARE.
 #define __ARM_FEATURE_FMA 1
 #endif
 
+#undef malloc
+#undef free
+#undef realloc
+#undef memset
+#undef memcpy
+#define malloc(Count)				FMemory::Malloc(Count)
+#define free(Original)				FMemory::Free(Original)
+#define realloc(Original, Count)	FMemory::Realloc(Original, Count)
+#define memset(Dest, Char, Count)	FMemory::Memset(Dest, Char, Count)
+#define memcpy(Dest, Source, Count)	FMemory::Memcpy(Dest, Source, Count)
+
+#include "HAL/UnrealMemory.h"
+
 THIRD_PARTY_INCLUDES_START
 
 #include "whisper.h"
@@ -116,10 +129,23 @@ extern "C"
 #include "ggml.c"
 #include "ggml-alloc.c"
 #include "ggml-quants.c"
+
+#undef malloc
+#undef free
+#undef realloc
+#undef memset
+#undef memcpy
+
 #include "ggml-backend.c"
 }
 
 THIRD_PARTY_INCLUDES_END
+
+#undef malloc
+#undef free
+#undef realloc
+#undef memset
+#undef memcpy
 
 #undef CACHE_LINE_SIZE
 #undef restrict

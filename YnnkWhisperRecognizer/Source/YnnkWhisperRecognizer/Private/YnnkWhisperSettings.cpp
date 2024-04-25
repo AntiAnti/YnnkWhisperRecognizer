@@ -3,6 +3,7 @@
 
 #include "YnnkWhisperSettings.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/Paths.h"
 
 UYnnkWhisperSettings::UYnnkWhisperSettings()
 {

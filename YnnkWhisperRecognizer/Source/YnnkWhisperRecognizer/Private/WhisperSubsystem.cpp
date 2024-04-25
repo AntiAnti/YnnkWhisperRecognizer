@@ -312,7 +312,8 @@ void UWhisperSubsystem::LoadModelFromAsset(TSoftObjectPtr<UZipUFSArchive> Archiv
 	if (!bForceReinitialize && IsInitialized())
 	{
 		// free memory
-		UAssetManager::Get().UnloadPrimaryAsset(Archive.Get()->GetPrimaryAssetId());
+		//UAssetManager::Get().UnloadPrimaryAsset(Archive.Get()->GetPrimaryAssetId());
+		Archive.Reset();
 		UE_LOG(LogWhisper, Log, TEXT("Whisper context is already initialized. Skipping reinitialization."));
 		return;
 	}
@@ -341,18 +342,19 @@ void UWhisperSubsystem::LoadModelFromAsset(TSoftObjectPtr<UZipUFSArchive> Archiv
 				bReady.AtomicSet(true);
 
 				// free memory
-				UAssetManager::Get().UnloadPrimaryAsset(Archive.Get()->GetPrimaryAssetId());
+				//UAssetManager::Get().UnloadPrimaryAsset(Archive.Get()->GetPrimaryAssetId());
 				Archive.Reset();
 
 				AsyncTask(ENamedThreads::GameThread, [this, Archive, bAutoBind]()
+				{
+					// free memory from the asset
+					//UAssetManager::Get().UnloadPrimaryAsset(Archive->GetPrimaryAssetId());
+
+					if (bAutoBind)
 					{
-						// free memory from the asset
-						UAssetManager::Get().UnloadPrimaryAsset(Archive->GetPrimaryAssetId());
-						if (bAutoBind)
-						{
-							OnModelReady();
-						}
+						OnModelReady();
 					}
+				}
 				);
 			}
 		}
@@ -373,7 +375,7 @@ void UWhisperSubsystem::RecognizeAudio(const TArray<float>& AudioDataF32)
 		{
 			if (whisper_full_parallel(WhisperContext, *WhisperParameters, TempRequest.AudioBuffer.GetData(), TempRequest.AudioBuffer.Num(), 1) != 0)
 			{
-				UE_LOG(LogWhisper, Log, TEXT("%n: failed to process audio"), TempRequest.AudioBuffer.Num());
+				UE_LOG(LogWhisper, Log, TEXT("%d: failed to process audio"), TempRequest.AudioBuffer.Num());
 			}
 		}
 	);
@@ -481,7 +483,7 @@ void UWhisperSubsystem::ResampleTempBuffer(int32 DataSampleRate)
 				}
 				else
 				{
-					UE_LOG(LogWhisper, Error, TEXT("Failed to resample audio data from %f to %f"), OriginalSampleRate, static_cast<float>(WHISPER_SAMPLE_RATE));
+					UE_LOG(LogWhisper, Error, TEXT("Failed to resample audio data from %d to %d"), OriginalSampleRate, WHISPER_SAMPLE_RATE);
 				}
 			}
 		);
@@ -511,7 +513,7 @@ void UWhisperSubsystem::RecognizeFromQueue()
 				RequestsQueue.Dequeue(ActiveRequest);
 				if (whisper_full_parallel(WhisperContext, *WhisperParameters, ActiveRequest.AudioBuffer.GetData(), ActiveRequest.AudioBuffer.Num(), 1) != 0)
 				{
-					UE_LOG(LogWhisper, Log, TEXT("%n: failed to process audio"), ActiveRequest.AudioBuffer.Num());
+					UE_LOG(LogWhisper, Log, TEXT("%d: failed to process audio"), ActiveRequest.AudioBuffer.Num());
 				}
 			}
 		);
@@ -545,6 +547,8 @@ void UWhisperSubsystem::SetLanguage_Implementation(const FString& InLanguage)
 			WhisperParameters->language = "pt";
 		else if (Language == TEXT("PL"))
 			WhisperParameters->language = "pl";
+		else if (Language == TEXT("TR"))
+			WhisperParameters->language = "tr";
 	}
 }
 
