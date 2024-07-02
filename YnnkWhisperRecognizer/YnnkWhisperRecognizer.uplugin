@@ -23,7 +23,9 @@
 			"Type": "UncookedOnly",
 			"LoadingPhase": "Default",
 			"PlatformAllowList": [
-				"Win64"
+				"Win64",
+				"Linux",
+				"Android"
 			]
 		}
 	],
