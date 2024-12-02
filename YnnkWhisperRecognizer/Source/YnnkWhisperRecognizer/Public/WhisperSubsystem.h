@@ -139,6 +139,7 @@ public:
 	{
 		return TEXT("Whisper.cpp");
 	}
+	virtual void GenerateCurves_Implementation(UAsyncRecognizer* Sender, const FYnnkGenerateRequestContext& Context) override {};
 	/* ~End IExternalRecognizerInterface interface */
 
 	/** Queue containing future requests for voice recognition */

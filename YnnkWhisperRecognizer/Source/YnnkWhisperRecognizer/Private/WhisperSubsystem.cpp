@@ -1,6 +1,7 @@
 ﻿// (c) Yuri N. K. 2024. All rights reserved.
 // ykasczc@gmail.com
 
+
 #include "WhisperSubsystem.h"
 #include "Async/Async.h"
 #include "Containers/StringConv.h"
@@ -13,9 +14,9 @@
 #include "Engine/AssetManager.h"
 #include "Misc/Paths.h"
 
-#include "GenericPlatform/GenericPlatformFile.h"
-#include "HAL/PlatformProcess.h"
+//#include "GenericPlatform/GenericPlatformFile.h"
 #if PLATFORM_ANDROID
+#include "HAL/PlatformProcess.h"
 #include "Android/AndroidPlatformFile.h"
 #include "Misc/App.h"
 #endif
@@ -50,7 +51,7 @@ FString UWhisperSubsystem::GetPlatformPath(FString Path)
 
 	while (Path.StartsWith(TEXT("../"), ESearchCase::CaseSensitive))
 	{
-		Path.RightChopInline(3, false);
+		Path.RightChopInline(3, EAllowShrinking::No);
 	}
 	Path.ReplaceInline(FPlatformProcess::BaseDir(), TEXT(""));
 	if (Path.Equals(TEXT(".."), ESearchCase::CaseSensitive))
@@ -247,7 +248,7 @@ void UWhisperSubsystem::LoadModelFromFile(const FString& FileName, bool bAutoBin
 	FileNameFull.ReplaceInline(TEXT("/./"), TEXT("/"), ESearchCase::CaseSensitive);
 	while (FileNameFull.StartsWith(TEXT("../"), ESearchCase::CaseSensitive))
 	{
-		FileNameFull.RightChopInline(3, false);
+		FileNameFull.RightChopInline(3, EAllowShrinking::No);
 	}
 	FileNameFull.ReplaceInline(FPlatformProcess::BaseDir(), TEXT(""));
 	if (FileNameFull.Equals(TEXT(".."), ESearchCase::CaseSensitive))

@@ -9,10 +9,11 @@ public class YnnkWhisperRecognizer : ModuleRules
 	public YnnkWhisperRecognizer(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+/*
 #if UE_5_3_OR_LATER
         MinCpuArchX64 = MinimumCpuArchitectureX64.AVX;
 #endif
-
+*/
         PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "whisper.cpp"));
 				
 		PublicIncludePaths.AddRange(
